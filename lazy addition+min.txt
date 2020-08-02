@@ -1,0 +1,139 @@
+#include <iostream>
+#include <bits/stdc++.h>
+#define ll long long int
+#define pb push_back
+#define pob pop_back
+#define mp make_pair
+#define f first
+#define s second
+#define mod 1000000007
+#define forl(i, x, y) for (ll i = x; i <= y; i++)
+#define umap unordered_map
+#define print(x) cout << x << "\n";
+#define clr(x) memset(x, 0, sizeof(x))
+#define deb(x) cout << #x << " = " << x << "\n"
+#define deb2(x, y) cout << #x << " = " << x << "\t" << #y << " = " << y << "\n"
+
+using namespace std;
+//LAZY PROPAGATION
+struct node
+{
+    ll min, lazy;
+};
+/*void buildTree(ll pos, ll low, ll high, node *st)
+{
+  if (low == high)
+    return;
+
+  ll mid = low + (high - low) / 2;
+  buildTree(2 * pos + 1, low, mid, st);
+  buildTree(2 * pos + 2, mid + 1, high, st);
+  st[pos].num = st[2 * pos + 1].num + st[2 * pos + 2].num;
+}*/
+void update(ll pos, ll low, ll high, ll qlow, ll qhigh, ll val, node *st)
+{
+    if (high < qlow || low > qhigh) //no overlap
+    {
+        return;
+    }
+    if (low >= qlow && high <= qhigh) //complete overlap
+    {
+        st[pos].lazy += val; //just fill value, no need to propagate deeper till required (BE LAZY)
+        //st[pos].min += val;
+        return;
+    }
+    //partial overlap
+    if (st[pos].lazy != 0) //means prev operations not applied, first do them, then move to left and right
+    {
+        if (low != high) //propagate  operator
+        {
+            st[2 * pos + 1].lazy += st[pos].lazy;
+            st[2 * pos + 2].lazy += st[pos].lazy;
+        }
+        st[pos].min += st[pos].lazy; //update min of current node
+        st[pos].lazy = 0;            //setting to 0 implies current node updated
+    }
+    ll mid = low + (high - low) / 2;
+    update(2 * pos + 1, low, mid, qlow, qhigh, val, st);
+    update(2 * pos + 2, mid + 1, high, qlow, qhigh, val, st);
+    st[pos].min = min(st[2 * pos + 1].min + st[2 * pos + 1].lazy, st[2 * pos + 2].min + st[2 * pos + 2].lazy);
+
+    return;
+}
+ll get_ans(ll pos, ll low, ll high, ll qlow, ll qhigh, node *st)
+{
+
+    if (high < qlow || low > qhigh) //no overlap
+    {
+        return INT_MAX;
+    }
+
+    if (low >= qlow && high <= qhigh) //complete overlap
+    {
+        if (st[pos].lazy != 0) //current node not fully updated
+        {
+            st[pos].min += st[pos].lazy; //update current node
+            if (low != high)             //propagate  operator
+            {
+                st[2 * pos + 1].lazy += st[pos].lazy;
+                st[2 * pos + 2].lazy += st[pos].lazy;
+            }
+            st[pos].lazy = 0; //means current node updated
+        }
+        return st[pos].min;
+    }
+
+    //partial overlap
+    if (st[pos].lazy != 0) //current node not fully updated
+    {
+        st[pos].min += st[pos].lazy; //update current node
+        if (low != high)             //propagate  operator
+        {
+            st[2 * pos + 1].lazy += st[pos].lazy;
+            st[2 * pos + 2].lazy += st[pos].lazy;
+        }
+        st[pos].lazy = 0; //means current node updated
+    }
+
+    ll mid = low + (high - low) / 2;
+    ll left = get_ans(2 * pos + 1, low, mid, qlow, qhigh, st);
+    ll right = get_ans(2 * pos + 2, mid + 1, high, qlow, qhigh, st);
+
+    return min(left, right);
+}
+int main()
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    ll n, q;
+    cin >> n >> q;
+    ll x = (ll)ceil(log2(n));
+    ll max_size = 2 * (ll)(pow(2, x)) - 1;
+    node st[max_size];
+    forl(i, 0, max_size - 1)
+    {
+        st[i].min = 0;
+        st[i].lazy = 0;
+    }
+    while (q--)
+    {
+        int type;
+        cin >> type;
+        if (type == 1)
+        {
+            ll l, r, v;
+            cin >> l >> r >> v;
+            r--;
+            update(0, 0, n - 1, l, r, v, st);
+        }
+        else
+        {
+            ll l, r;
+            cin >> l >> r;
+            r--;
+            ll ans = get_ans(0, 0, n - 1, l, r, st);
+            print(ans);
+        }
+    }
+    return 0;
+}
