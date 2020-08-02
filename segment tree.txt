@@ -1,0 +1,142 @@
+#include <iostream>
+#include <bits/stdc++.h>
+#define ll long long int
+#define pb push_back
+#define pob pop_back
+#define mp make_pair
+#define f first
+#define s second
+#define mod 1000000007
+#define forl(i, x, y) for (ll i = x; i <= y; i++)
+#define umap unordered_map
+#define clr(x) memset(x, 0, sizeof(x))
+#define deb(x) cout << #x << " = " << x << "\n"
+#define deb2(x, y) cout << #x << " = " << x << "\t" << #y << " = " << y << "\n"
+
+//SUM RANGE BEASED QUERY + UPDATE QUERY
+using namespace std;
+void buildTree(ll pos, ll low, ll high, ll *st, ll *a) //SUM TREE
+{
+  if (low == high)
+  {
+    st[pos] = a[low];
+    return;
+  }
+  ll mid = low + (high - low) / 2;
+  buildTree(2 * pos + 1, low, mid, st, a);
+  buildTree(2 * pos + 2, mid + 1, high, st, a);
+  st[pos] = st[2 * pos + 1] + st[2 * pos + 2];
+}
+ll get_ans(ll pos, ll low, ll high, ll qlow, ll qhigh, ll *st) //SUM TRE
+{
+  if (high < qlow || low > qhigh) //no overlap
+    return 0;
+  if (low >= qlow && high <= qhigh) //complete overlap
+    return st[pos];
+  //partial overlap
+  ll mid = low + (high - low) / 2;
+  ll left = get_ans(2 * pos + 1, low, mid, qlow, qhigh, st);
+  ll right = get_ans(2 * pos + 2, mid + 1, high, qlow, qhigh, st);
+  return left + right;
+}
+//UPDATE QUERY FOR MIN TREE
+void update(ll pos, ll low, ll high, ll index, ll val, ll *st)
+{
+  if (index > high || index < low) //out of range
+    return;
+
+  if (low == high && low == index)
+  {
+    st[pos] = val;
+    return;
+  }
+
+  if (high != low)
+  {
+    ll mid = low + (high - low) / 2;
+    update(2 * pos + 1, low, mid, index, val, st);
+    update(2 * pos + 2, mid + 1, high, index, val, st);
+    st[pos] = min(st[2 * pos + 1], st[2 * pos + 2]);
+  }
+}
+
+int main()
+{
+  //ios_base::sync_with_stdio(false);
+  //cin.tie(NULL);
+  ll n, q;
+  cin >> n >> q;
+  ll a[n];
+  forl(i, 0, n - 1)
+  {
+    cin >> a[i];
+  }
+  ll x = (ll)ceil(log2(n));
+  ll max_size = 2 * (ll)(pow(2, x)) - 1;
+  ll st[max_size];
+  buildTree(0, 0, n - 1, st, a);
+  while (q--)
+  {
+    int s;
+    cin >> s;
+    if (s == 1)
+    {
+      ll i, v;
+      cin >> i >> v;
+      ll diff = v - a[i];
+      a[i] = v; //**
+      update(0, 0, n - 1, i, diff, st);
+    }
+    if (s == 2)
+    {
+      ll l, r;
+      cin >> l >> r;
+      r--;
+      ll ans = get_ans(0, 0, n - 1, l, r, st);
+      cout << ans << "\n";
+    }
+  }
+
+  return 0;
+}
+
+// GCD SEG TREE 
+//INTERMEDIATE NODES= GCD(left child, right child)
+//__gcd(a,b) predefined func for finding gcd of a,b(euclid algo)
+ll find_gcd(ll pos, ll low, ll high, ll qlow, ll qhigh, ll *gcd_st)
+{
+    if (high < qlow || low > qhigh) //no overlap
+        return 0;
+    if (low >= qlow && high <= qhigh) // complete overlap
+        return gcd_st[pos];
+
+    //partial overlap
+    ll mid = low + (high - low) / 2;
+    ll g1 = find_gcd(2 * pos + 1, low, mid, qlow, qhigh, gcd_st);
+    ll g2 = find_gcd(2 * pos + 2, mid + 1, high, qlow, qhigh, gcd_st);
+    if (!g1)
+        return g2;
+    if (!g2)
+        return g1;
+    if (g1 && g2)
+        return __gcd(g1, g2); 
+}
+
+
+void update(ll pos, ll low, ll high, ll index, ll diff, ll *st) //SUM TREE
+{
+  if (index > high || index < low) //out of range
+    return;
+  if (index <= high && index >= low) //index within range=>needs to be updated
+  {
+    st[pos] += diff;
+  }
+
+  if (high != low)
+  {
+    ll mid = low + (high - low) / 2;
+    update(2 * pos + 1, low, mid, index, diff, st);
+    update(2 * pos + 2, mid + 1, high, index, diff, st);
+  }
+}
+
