@@ -1,0 +1,128 @@
+//RANGE UPDATION + LAZY PROPAGATION
+
+//RANGE BASED UPDATION FOR ADDITION IN SEGMENT (a[i]+=val) 
+void update(ll pos, ll low, ll high, ll qlow, ll qhigh, ll val, ll *st) //RANGE BASED UPDATION
+{
+  if (high < qlow || low > qhigh) //no overlap
+  {
+    return;
+  }
+  if (low >= qlow && high <= qhigh) //complete overlap
+  {
+    st[pos] += val;
+    return;
+  }
+  //partial overlap
+  ll mid = low + (high - low) / 2;
+  update(2 * pos + 1, low, mid, qlow, qhigh, val, st);
+  update(2 * pos + 2, mid + 1, high, qlow, qhigh, val, st);
+  return;
+}
+ll get_ans(ll pos, ll low, ll high, ll index, ll *st) //RANGE BASED // VALUE AT INDEX i OR a[i]
+{                                                        //ROOT TO ith LEAF PATH (ADD ALL)
+  if (index > high || index < low) //out of range
+    return 0;
+
+  if (low == high && low == index)
+  {
+    return st[pos];
+  }
+
+  if (high != low)
+  {
+    ll mid = low + (high - low) / 2;
+    ll left = get_ans(2 * pos + 1, low, mid, index, st);
+    ll right = get_ans(2 * pos + 2, mid + 1, high, index, st);
+    return left + right + st[pos];
+  }
+}
+
+//LAZY PROPAGATION IS FOR NON-COMMUTATIVE OPERATIONS eg: ASSIGNMENT OPERATION (where order of operations MATTERS)
+//LAZY PROPAGATION
+void update(ll pos, ll low, ll high, ll qlow, ll qhigh, ll val, ll *st)
+{
+
+  if (high < qlow || low > qhigh) //no overlap
+  {
+    return;
+  }
+  if (low >= qlow && high <= qhigh) //complete overlap
+  {
+    st[pos] = val; //just fill value, no need to propagate deeper till required (BE LAZY)
+    return;
+  }
+  //partial overlap
+  if (st[pos] != -1) //means prev operations not applied, first do them, then move to left and right
+  {
+    if (low != high) //propagate assignment operator
+    {
+      st[2 * pos + 1] = st[pos];
+      st[2 * pos + 2] = st[pos];
+    }
+    st[pos] = -1; //setting to -1 implies ready for current operation OR no backlog of prev operations left
+  }
+  ll mid = low + (high - low) / 2;
+  update(2 * pos + 1, low, mid, qlow, qhigh, val, st);
+  update(2 * pos + 2, mid + 1, high, qlow, qhigh, val, st);
+  return;
+}
+ll get_ans(ll pos, ll low, ll high, ll index, ll *st)
+{
+  //NO NEED TO PROPAGATE TO GET ANS
+
+  if (index > high || index < low) //out of range
+    return -1;
+
+  if (index <= high && index >= low) //index completely within range
+  {
+    if (st[pos] != -1) //means this is latest operation , so return this assignment value
+      return st[pos];
+    //if st[pos] == -1, then u have to dig deeper
+  }
+
+  if (low == high && low == index) //ans leaf
+  {
+    if (st[pos] == -1)
+      st[pos] = 0; //since all leaves by default are 0
+
+    return st[pos];
+  }
+
+  if (high != low)
+  {
+    ll mid = low + (high - low) / 2;
+    ll left = get_ans(2 * pos + 1, low, mid, index, st);
+    ll right = get_ans(2 * pos + 2, mid + 1, high, index, st);
+    return max(left, right);
+  }
+}
+int main()
+{
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
+  ll n, q;
+  cin >> n >> q;
+  ll x = (ll)ceil(log2(n));
+  ll max_size = 2 * (ll)(pow(2, x)) - 1;
+  ll st[max_size] = {-1}; //-1 cuz no val can be -1
+  while (q--)
+  {
+    int type;
+    cin >> type;
+    if (type == 1)
+    {
+      ll l, r, v;
+      cin >> l >> r >> v;
+      r--;
+      update(0, 0, n - 1, l, r, v, st);
+    }
+    else
+    {
+      ll i;
+      cin >> i;
+      ll ans = get_ans(0, 0, n - 1, i, st);
+      print(ans);
+    }
+  }
+  return 0;
+}
